@@ -9,7 +9,7 @@ from numpy import *
 from PIL import Image  
 import os
 
-preview = True # nv21
+preview = False # nv21
   
            
 def yuv_import(filename,dims,numfrm,startfrm):  
@@ -43,10 +43,10 @@ def yuv_import(filename,dims,numfrm,startfrm):
 
         # for m in range(d00):  
         #     for n in range(d01):  
-        #         Ut[m,n]=ord(fp.read(1))  
+        #         Vt[m,n]=ord(fp.read(1))  
         # for m in range(d00):  
         #     for n in range(d01):  
-        #         Vt[m,n]=ord(fp.read(1))  
+        #         Ut[m,n]=ord(fp.read(1))  
         Y=Y+[Yt]  
         U=U+[Ut]  
         V=V+[Vt]  
@@ -61,10 +61,20 @@ def yuv2rgb(Y,U,V,width,height):
     rr=zeros((width,height),float,'C')  
     gg=zeros((width,height),float,'C')  
     bb=zeros((width,height),float,'C')  
+
     rr= Y+1.14*(V-128.0)  
     gg= Y-0.395*(U-128.0)-0.581*(V-128.0)  
     bb= Y+2.032*(U-128.0)             # 必须是128.0，否则出错  
-  
+
+    # rr = Y + (1.370705 * (V-128.0));
+    # gg = Y - (0.698001 * (V-128.0)) - (0.337633 * (U-128.0));
+    # bb = Y + (1.732446 * (V-128.0));
+
+    rr = clip(rr, 0, 255)
+    gg = clip(gg, 0, 255)
+    bb = clip(bb, 0, 255)
+
+ 
     rr1=rr.astype(uint8)  
     gg1=gg.astype(uint8)  
     bb1=bb.astype(uint8)  
