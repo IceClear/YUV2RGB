@@ -7,14 +7,15 @@
 import os
 from numpy import *
 import struct
+import scipy.misc
 
-preview = True # nv21
-confidence = True
+preview = False # nv21
+confidence = False
         
 
 if __name__ == '__main__':  
 
-    ret = 'resData/'
+    retFile = 'resData/'
 
     if not preview:
         path = 'capture/'
@@ -30,7 +31,7 @@ if __name__ == '__main__':
 
     for file in files:
 
-        keyword = "depth"
+        keyword = ".dat"
         keyword2 = "CONFIDENCE"
 
         if not keyword in file:
@@ -65,9 +66,23 @@ if __name__ == '__main__':
                     ret[i][j] = tmp[0]
                     
 
-                print ret[i][j]
+                # print ret[i][j]
 
-        break######test the first file
+        tmpMax = amax(ret)
+        tmpMin = amin(ret)
+        print tmpMax
+        print tmpMin
+
+        ## normalize
+        for i in range(width):
+            for j in range(height):
+                ret[i][j] = (ret[i][j] - tmpMin) / (tmpMax - tmpMin)
+
+        scipy.misc.imsave(retFile + path + file[0:-3] + 'png', ret)
+
+
+
+        # break######test the first file
                 
 
        
