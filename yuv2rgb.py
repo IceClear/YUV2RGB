@@ -9,7 +9,7 @@ from numpy import *
 from PIL import Image  
 import os
 
-preview = False # nv21
+preview = True 
   
            
 def yuv_import(filename,dims,numfrm,startfrm):  
@@ -24,20 +24,19 @@ def yuv_import(filename,dims,numfrm,startfrm):
     Yt=zeros((dims[0],dims[1]),uint8,'C')  
     Ut=zeros((d00,d01),uint8,'C')  
     Vt=zeros((d00,d01),uint8,'C')  
-    # print dims[0]
-    # print dims[1]
+
     for i in range(numfrm):  
         for m in range(dims[0]):  
             for n in range(dims[1]):  
                 #print m,n  
                 Yt[m,n]=ord(fp.read(1))  
 
-        if not preview:
+        if not preview: #capture nv12
             for m in range(d00):  
                 for n in range(d01):  
                     Ut[m,n]=ord(fp.read(1)) 
                     Vt[m,n]=ord(fp.read(1)) 
-        else:
+        else:#preview nv21
             for m in range(d00):  
                 for n in range(d01):  
                     Vt[m,n]=ord(fp.read(1)) 
@@ -64,9 +63,18 @@ def yuv2rgb(Y,U,V,width,height):
     gg=zeros((width,height),float,'C')  
     bb=zeros((width,height),float,'C')  
 
-    rr= Y+1.14*(V-128.0)  
-    gg= Y-0.395*(U-128.0)-0.581*(V-128.0)  
-    bb= Y+2.032*(U-128.0)             # 必须是128.0，否则出错  
+    Y = Y.astype(float)
+    U = U.astype(float)
+    V = V.astype(float)
+
+
+    bb = 1.164 * (Y-16) + 2.018 * (U - 128)
+    gg = 1.164 * (Y-16) - 0.813 * (V - 128) - 0.391 * (U - 128)
+    rr = 1.164 * (Y-16) + 1.596*(V - 128)
+
+    # rr= Y+1.14*(V-128.0)  
+    # gg= Y-0.395*(U-128.0)-0.581*(V-128.0)  
+    # bb= Y+2.032*(U-128.0)             # 必须是128.0，否则出错  
 
     # rr = Y + (1.370705 * (V-128.0));
     # gg = Y - (0.698001 * (V-128.0)) - (0.337633 * (U-128.0));
@@ -81,7 +89,6 @@ def yuv2rgb(Y,U,V,width,height):
     gg1=gg.astype(uint8)  
     bb1=bb.astype(uint8)  
  
-    # print bb1[0:6,0:6]  
       
     return rr1,gg1,bb1  
 
@@ -121,11 +128,6 @@ if __name__ == '__main__':
         co.save(savePath)  
 
 
-        # # for m in range(2):  
-        # #     print m,': ', YY[m,:]  
-      
-        # print R_.shape
-
         im=Image.frombytes('L',size, R_.tostring())  
-        # im.show()  
+ 
         im.save(ret + path + file[0:-4]+ 'gray'+'.jpg')  
