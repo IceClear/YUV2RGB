@@ -8,9 +8,10 @@ import os
 from numpy import *
 import struct
 import scipy.misc
+from PIL import Image  
 
-preview = False # nv21
-confidence = False
+preview = True # nv21
+confidence = True
         
 
 if __name__ == '__main__':  
@@ -26,6 +27,8 @@ if __name__ == '__main__':
 
     width = size[0]
     height = size[1]
+    # print("width:", width)
+    # print("height", height)
     
     files = os.listdir(path)
 
@@ -73,12 +76,24 @@ if __name__ == '__main__':
         print tmpMax
         print tmpMin
 
+
         ## normalize
+        ret = ret.astype(float)
+
         for i in range(width):
             for j in range(height):
-                ret[i][j] = (ret[i][j] - tmpMin) / (tmpMax - tmpMin)
+                # print(ret[i][j])
+                ret[i][j] = (ret[i][j] - tmpMin) / (tmpMax - tmpMin) * 255
+                # print(ret[i][j])
 
-        scipy.misc.imsave(retFile + path + file[0:-3] + 'png', ret)
+        ret = ret.astype(uint8)
+
+        im=Image.frombytes('L',size, ret.tostring())
+        im.save(retFile + path + file[0:-3] + 'jpg')
+
+
+        # scipy.misc.imsave(retFile + path + file[0:-3] + 'png', ret)
+
 
 
 

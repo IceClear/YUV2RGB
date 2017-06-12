@@ -24,6 +24,8 @@ def yuv_import(filename,dims,numfrm,startfrm):
     Yt=zeros((dims[0],dims[1]),uint8,'C')  
     Ut=zeros((d00,d01),uint8,'C')  
     Vt=zeros((d00,d01),uint8,'C')  
+    # print dims[0]
+    # print dims[1]
     for i in range(numfrm):  
         for m in range(dims[0]):  
             for n in range(dims[1]):  
@@ -122,6 +124,8 @@ if __name__ == '__main__':
         # # for m in range(2):  
         # #     print m,': ', YY[m,:]  
       
+        # print R_.shape
+
         im=Image.frombytes('L',size, R_.tostring())  
         # im.show()  
         im.save(ret + path + file[0:-4]+ 'gray'+'.jpg')  
