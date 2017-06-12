@@ -23,7 +23,7 @@ if __name__ == '__main__':
         size = (992,744)
     else:
         path = 'preview/'
-        size = (720,540)
+        size = (768,540)
 
     width = size[0]
     height = size[1]
