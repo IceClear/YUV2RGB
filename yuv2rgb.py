@@ -1,133 +1,79 @@
-# -*- coding: utf-8 -*-  
-"""  
-Created on Thu Jan 10 10:48:00 2013  
-  
-@author: Chen Ming  
-"""  
-  
-from numpy import *  
-from PIL import Image  
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan 10 10:48:00 2013
+
+@author: Chen Ming
+"""
+
+from numpy import *
+from PIL import Image
 import os
+import cv2
 
-preview = True 
-  
-           
-def yuv_import(filename,dims,numfrm,startfrm):  
-    fp=open(filename,'rb')  
-    blk_size = prod(dims) *3/2  
-    fp.seek(blk_size*startfrm,0)  
-    Y=[]  
-    U=[]  
-    V=[]  
-    d00=dims[0]//2  
-    d01=dims[1]//2  
-    Yt=zeros((dims[0],dims[1]),uint8,'C')  
-    Ut=zeros((d00,d01),uint8,'C')  
-    Vt=zeros((d00,d01),uint8,'C')  
+def read_YUV420(image_path, rows, cols):
+    """
+    读取YUV文件，解析为Y, U, V图像
+    :param image_path: YUV图像路径
+    :param rows: 给定高
+    :param cols: 给定宽
+    :return: 列表，[Y, U, V]
+    """
+    # create Y
+    gray = np.zeros((rows, cols), np.uint8)
+    # print(type(gray))
+    # print(gray.shape)
 
-    for i in range(numfrm):  
-        for m in range(dims[0]):  
-            for n in range(dims[1]):  
-                #print m,n  
-                Yt[m,n]=ord(fp.read(1))  
+    # create U,V
+    img_U = np.zeros((int(rows / 2), int(cols / 2)), np.uint8)
+    # print(type(img_U))
+    # print(img_U.shape)
 
-        if not preview: #capture nv12
-            for m in range(d00):  
-                for n in range(d01):  
-                    Ut[m,n]=ord(fp.read(1)) 
-                    Vt[m,n]=ord(fp.read(1)) 
-        else:#preview nv21
-            for m in range(d00):  
-                for n in range(d01):  
-                    Vt[m,n]=ord(fp.read(1)) 
-                    Ut[m,n]=ord(fp.read(1)) 
+    img_V = np.zeros((int(rows / 2), int(cols / 2)), np.uint8)
+    # print(type(img_V))
+    # print(img_V.shape)
 
-        # for m in range(d00):  
-        #     for n in range(d01):  
-        #         Vt[m,n]=ord(fp.read(1))  
-        # for m in range(d00):  
-        #     for n in range(d01):  
-        #         Ut[m,n]=ord(fp.read(1))  
-        Y=Y+[Yt]  
-        U=U+[Ut]  
-        V=V+[Vt]  
-    fp.close()  
-    return (Y,U,V)  
+    with open(image_path, 'rb') as reader:
+        for i in range(rows):
+            for j in range(cols):
+                gray[i, j] = ord(reader.read(1))
 
-def yuv2rgb(Y,U,V,width,height):  
-    U=repeat(U,2,0)  
-    U=repeat(U,2,1)  
-    V=repeat(V,2,0)  
-    V=repeat(V,2,1)  
-    rr=zeros((width,height),float,'C')  
-    gg=zeros((width,height),float,'C')  
-    bb=zeros((width,height),float,'C')  
+        for i in range(int(rows / 2)):
+            for j in range(int(cols / 2)):
+                img_U[i, j] = ord(reader.read(1))
 
-    Y = Y.astype(float)
-    U = U.astype(float)
-    V = V.astype(float)
+        for i in range(int(rows / 2)):
+            for j in range(int(cols / 2)):
+                img_V[i, j] = ord(reader.read(1))
 
+    return [gray, img_U, img_V]
 
-    bb = 1.164 * (Y-16) + 2.018 * (U - 128)
-    gg = 1.164 * (Y-16) - 0.813 * (V - 128) - 0.391 * (U - 128)
-    rr = 1.164 * (Y-16) + 1.596*(V - 128)
+'works for yuv420p'
+def merge_YUV2RGB_v1(Y, U, V):
+    """
+    转换YUV图像为RGB格式（放大U、V）
+    :param Y: Y分量图像
+    :param U: U分量图像
+    :param V: V分量图像
+    :return: RGB格式图像
+    """
+    # Y分量图像比U、V分量图像大一倍，想要合并3个分量，需要先放大U、V分量和Y分量一样大小
+    enlarge_U = cv2.resize(U, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
+    enlarge_V = cv2.resize(V, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
 
-    # rr= Y+1.14*(V-128.0)  
-    # gg= Y-0.395*(U-128.0)-0.581*(V-128.0)  
-    # bb= Y+2.032*(U-128.0)             # 必须是128.0，否则出错  
+    # 合并YUV3通道
+    img_YUV = cv2.merge([Y, enlarge_U, enlarge_V])
 
-    # rr = Y + (1.370705 * (V-128.0));
-    # gg = Y - (0.698001 * (V-128.0)) - (0.337633 * (U-128.0));
-    # bb = Y + (1.732446 * (V-128.0));
+    dst = cv2.cvtColor(img_YUV, cv2.COLOR_YUV2BGR)
+    return dst
 
-    rr = clip(rr, 0, 255)
-    gg = clip(gg, 0, 255)
-    bb = clip(bb, 0, 255)
+if __name__ == '__main__':
 
- 
-    rr1=rr.astype(uint8)  
-    gg1=gg.astype(uint8)  
-    bb1=bb.astype(uint8)  
- 
-      
-    return rr1,gg1,bb1  
+    image_path = ''
+    size = (3840,2880)
+    Y, U, V = read_YUV420(image_path, size[1], size[0])
 
-if __name__ == '__main__':  
+    dst = merge_YUV2RGB_v1(Y, U, V)
 
-    ret = 'res/'
-    if not preview:
-        path = 'capture/'
-        size = (3968,2976)
-    else:
-        path = 'preview/'
-        size = (1280, 960)
-    
-    files = os.listdir(path)
-
-    for file in files:
-
-        if not "yuv" in file:
-            continue
-
-        data=yuv_import(path + '/' + file,size,1,0)  
-
-        R_=data[0][0]  
-        G_=data[1][0]  
-        B_=data[2][0]  
-        RGB=yuv2rgb(R_,G_,B_,size[0],size[1])  
-        im_r=Image.frombytes('L',size,RGB[0].tostring())  
-        im_g=Image.frombytes('L',size,RGB[1].tostring())  
-        im_b=Image.frombytes('L',size,RGB[2].tostring())  
-        # im_r.show()  
-        # for m in range(2):  
-        #     print m,': ', R_[m,:]  
-        co=Image.merge('RGB', (im_r,im_g,im_b))  
-        # co.show()  
-        savePath = ret + path + file[0:-3]+'jpg'
-        print savePath
-        co.save(savePath)  
-
-
-        im=Image.frombytes('L',size, R_.tostring())  
- 
-        im.save(ret + path + file[0:-4]+ 'gray'+'.jpg')  
+    cv2.imshow("dst", dst)
+    cv2.imwrite('test_yuv.png', dst)
+    cv2.waitKey(0) # not enter key in the terminal
